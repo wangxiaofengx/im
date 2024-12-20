@@ -11,9 +11,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ServerEndpoint("/video/conference/websocket/{sid}")
@@ -33,6 +38,10 @@ public class RtcHandler {
 
     private static ConcurrentHashMap<String, RtcHandler> webSocketMap = new ConcurrentHashMap<>();
 
+    private static ConcurrentHashMap<String, Set<String>> groupMap = new ConcurrentHashMap<>();
+
+    private String sid;
+
     private Session session;
 
     private UserInfo userInfo;
@@ -41,9 +50,13 @@ public class RtcHandler {
      * 连接建立成功调用的方法
      */
     @OnOpen
-    public void onOpen(Session session) {
+    public void onOpen(Session session, @PathParam("sid") String sid) {
+        this.sid = sid;
+
+        Set<String> sets = groupMap.computeIfAbsent(sid, (s) -> ConcurrentHashMap.newKeySet());
         this.session = session;
         String userId = session.getId();
+        sets.add(userId);
         if (webSocketMap.containsKey(userId)) {
             webSocketMap.remove(userId);
             webSocketMap.put(userId, this);
@@ -74,6 +87,13 @@ public class RtcHandler {
         String userId = userInfo.getId();
         if (webSocketMap.containsKey(userId)) {
             webSocketMap.remove(userId);
+            Set<String> sets = groupMap.get(this.sid);
+            sets.remove(userId);
+            synchronized (RtcHandler.class) {
+                if (sets.isEmpty()) {
+                    groupMap.remove(this.sid);
+                }
+            }
             subOnlineCount();
         }
         Message messageObj = new Message();
@@ -89,7 +109,6 @@ public class RtcHandler {
      */
     @OnMessage
     public void onMessage(String messageText) throws IOException {
-        RtcHandler that = this;
         log.info("用户消息:" + this.session.getId() + ",报文:" + messageText);
         if (StringUtils.isBlank(messageText)) {
             return;
@@ -104,9 +123,14 @@ public class RtcHandler {
             webSocketMap.get(sendTo).sendMessage(message);
             return;
         }
-        webSocketMap.forEach((k, v) -> {
+        Set<String> sets = groupMap.get(sid);
+        if (sets == null || sets.isEmpty()) {
+            return;
+        }
+        sets.forEach(userId -> {
             try {
-                if (v != that) {
+                RtcHandler v = webSocketMap.get(userId);
+                if (v != this) {
                     v.sendMessage(message);
                 }
             } catch (IOException e) {
@@ -141,11 +165,11 @@ public class RtcHandler {
         return onlineCount.get();
     }
 
-    public static synchronized void addOnlineCount() {
+    public static void addOnlineCount() {
         onlineCount.incrementAndGet();
     }
 
-    public static synchronized void subOnlineCount() {
+    public static void subOnlineCount() {
         onlineCount.decrementAndGet();
     }
 
