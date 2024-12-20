@@ -96,9 +96,6 @@ public class RtcHandler {
             }
             subOnlineCount();
         }
-        Message messageObj = new Message();
-        messageObj.setType(Message.Type.LEAVE.getType());
-        onMessage(getObjectMapper().writeValueAsString(messageObj));
         log.info("用户退出:" + userId + ",当前在线人数为:" + getOnlineCount());
     }
 
