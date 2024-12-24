@@ -1,5 +1,6 @@
 package com.conference.service;
 
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,8 @@ public class IceService {
     @Value("${ice.stun-server-url}")
     String iceServerUrl;
 
-    List<String> iceServers;
+    @Getter
+    static List<String> iceServers;
 
     private final RestTemplate restTemplate;
 
@@ -38,10 +40,10 @@ public class IceService {
         try {
             this.fetchIceServers();
         } catch (Exception e) {
-            log.error("Failed to fetch ice server urls", e);
+            log.error("Failed to fetch ice server urls:{}", e.toString());
             this.readIceFile();
         }
-        log.info("ice server list: {}",iceServers);
+        log.info("ice server list: {}", iceServers);
     }
 
     @Scheduled(cron = "0 0 3 * * *")
@@ -49,7 +51,7 @@ public class IceService {
         try {
             this.fetchIceServers();
         } catch (Exception e) {
-            log.error("Failed to fetch ice server urls", e);
+            log.error("Failed to fetch ice server urls:{}", e.toString());
         }
     }
 
@@ -57,7 +59,7 @@ public class IceService {
     public void fetchIceServers() {
         log.info("Fetching ice server urls from {}", iceServerUrl);
         String response = restTemplate.getForObject(iceServerUrl, String.class);
-        this.iceServers = Arrays.asList(response.split("\\r?\\n"));
+        IceService.iceServers = Arrays.asList(response.split("\\r?\\n"));
         log.info("ice server urls {}", iceServers);
     }
 
@@ -65,15 +67,8 @@ public class IceService {
     public void readIceFile() {
         ClassPathResource resource = new ClassPathResource("data/valid_hosts.txt");
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
-            this.iceServers = reader.lines().collect(Collectors.toList());
+            List<String> urls = reader.lines().collect(Collectors.toList());
+            IceService.iceServers = urls;
         }
-    }
-
-    public List<String> getIceServers() {
-        return iceServers;
-    }
-
-    public void setIceServers(List<String> iceServers) {
-        this.iceServers = iceServers;
     }
 }

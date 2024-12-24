@@ -2,6 +2,7 @@ package com.conference.websocket;
 
 import com.conference.bo.Message;
 import com.conference.bo.UserInfo;
+import com.conference.service.IceService;
 import com.conference.util.JsonUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomUtils;
@@ -14,6 +15,8 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,7 +72,10 @@ public class RtcHandler {
         try {
             Message message = new Message();
             message.setType(Message.Type.INIT.getType());
-            message.setData(userInfo);
+            Map<String, Object> data = new HashMap<>();
+            data.put("iceServers", IceService.getIceServers());
+            data.put("userInfo", userInfo);
+            message.setData(data);
             sendMessage(message);
         } catch (IOException e) {
             log.error("用户:" + userId + ",网络异常!!!!!!");
