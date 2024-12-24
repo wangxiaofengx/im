@@ -1,5 +1,5 @@
 server:
-  port: 9900
+  port: 80
 #  ssl:
 #    key-store: classpath:keystore.jks
 #    key-store-password: 123456
