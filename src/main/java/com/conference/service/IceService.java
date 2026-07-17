@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,8 +27,11 @@ public class IceService implements InitializingBean {
     @Value("${ice.stun-server-url}")
     String iceServerUrl;
 
+    @Value("${ice.enable:false}")
+    boolean enabled;
+
     @Getter
-    static List<String> iceServers;
+    static List<String> iceServers = new ArrayList<>();
 
     private final RestClient restClient;
 
@@ -46,8 +50,11 @@ public class IceService implements InitializingBean {
 
     @SneakyThrows
     public void fetchIceServers() {
+        if (!enabled) {
+            return;
+        }
         log.info("Fetching ice server urls from {}", iceServerUrl);
-        String response = restClient.get().uri(iceServerUrl) .retrieve().body(String.class);
+        String response = restClient.get().uri(iceServerUrl).retrieve().body(String.class);
         IceService.iceServers = Arrays.asList(response.split("\\r?\\n"));
         log.info("ice server urls {}", iceServers);
     }

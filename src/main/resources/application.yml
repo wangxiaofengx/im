@@ -15,3 +15,4 @@ spring:
       request-timeout: -1
 ice:
   stun-server-url: https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt
+  enable: false
