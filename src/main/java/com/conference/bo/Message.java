@@ -22,6 +22,7 @@ public class Message {
         CLOSE("close"),
         MESSAGE("message"),
         PING("ping"),
+        PONG("pong"),
         ;
         String type;
 

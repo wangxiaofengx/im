@@ -109,14 +109,17 @@ public class RtcHandler {
      */
     @OnMessage
     public void onMessage(String messageText) throws IOException {
-        log.info("用户消息:" + this.session.getId() + ",报文:" + messageText);
         if (StringUtils.isBlank(messageText)) {
             return;
         }
         Message message = getObjectMapper().readValue(messageText, Message.class);
         if (Message.Type.PING.getType().equals(message.getType())) {
+            Message pong = new Message();
+            pong.setType(Message.Type.PONG.getType());
+            sendMessage(pong);
             return;
         }
+        log.info("用户消息:" + this.session.getId() + ",报文:" + messageText);
         message.setSender(userInfo.getId());
         String sendTo = message.getReceiver();
         if (sendTo != null) {
