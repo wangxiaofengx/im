@@ -13,6 +13,8 @@ hs_err_pid*
 
 /.idea/
 /target/
+/dist/
+/.tools/
 *.iml
 /log/
 /logs/*
